@@ -458,9 +458,10 @@ const CreateCourse = () => {
     </div>
   );
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="w-full px-6 py-8"> {/* <--- Full width applied here */}
         <div className="bg-white rounded-2xl shadow-sm border p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
@@ -477,7 +478,6 @@ const CreateCourse = () => {
             {step === 3 && renderStep3()}
           </div>
 
-          {/* Upload Progress */}
           {isUploading && (
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
@@ -485,7 +485,7 @@ const CreateCourse = () => {
                 <span className="text-sm text-gray-500">{uploadProgress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 />
@@ -493,7 +493,6 @@ const CreateCourse = () => {
             </div>
           )}
 
-          {/* Navigation Buttons */}
           <div className="flex items-center justify-between">
             <button
               onClick={() => setStep(Math.max(1, step - 1))}
@@ -509,7 +508,7 @@ const CreateCourse = () => {
 
             <div className="flex space-x-4">
               <button
-                onClick={() => {/* Save as draft */}}
+                onClick={() => {}}
                 className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all"
               >
                 <Save className="w-4 h-4 inline mr-2" />
@@ -535,7 +534,6 @@ const CreateCourse = () => {
             </div>
           </div>
 
-          {/* Preview Button */}
           <div className="mt-6 text-center">
             <button className="text-indigo-600 hover:text-indigo-800 font-medium">
               <Eye className="w-4 h-4 inline mr-1" />

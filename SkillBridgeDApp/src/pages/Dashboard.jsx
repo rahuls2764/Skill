@@ -137,8 +137,8 @@ const Dashboard = () => {
 
   if (!account) {
     return (
-      <div className="p-6 text-center text-red-400">
-        <div className="max-w-md mx-auto mt-20">
+      <div className="dashboard-full-width w-full min-h-screen p-6 text-center text-red-400">
+        <div className="w-full mx-auto mt-20">
           <Trophy size={48} className="mx-auto mb-4 text-red-400" />
           <h2 className="text-xl font-bold mb-2">Access Denied</h2>
           <p>Please connect your wallet to access your dashboard.</p>
@@ -149,8 +149,8 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="p-6 text-center text-cyan-400">
-        <div className="max-w-md mx-auto mt-20">
+      <div className="dashboard-full-width w-full min-h-screen p-6 text-center text-cyan-400">
+        <div className="w-full mx-auto mt-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4"></div>
           <p>Loading dashboard...</p>
         </div>
@@ -159,7 +159,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 text-white">
+    <div className="dashboard-full-width w-full min-h-screen p-6 text-white">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -230,7 +230,7 @@ const Dashboard = () => {
             <Play size={24} className="text-cyan-400" />
             Continue Learning
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
             {enrolledCourses.map((course) => (
               <div key={course.id} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-cyan-500 transition-colors">
                 <div className="h-40 bg-gray-700 flex items-center justify-center">
@@ -263,7 +263,7 @@ const Dashboard = () => {
           <TrendingUp size={24} className="text-cyan-400" />
           Popular Courses
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           {availableCourses.map((course) => {
             const isEnrolled = enrolledCourses.some(c => c.id === course.id);
             const isCompleted = completedCourses.some(c => c.id === course.id);
