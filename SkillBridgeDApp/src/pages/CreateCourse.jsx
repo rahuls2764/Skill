@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, Plus, X, Eye, Save, Video, FileText, Zap, CheckCircle, AlertCircle, Sparkles, Wand2 } from 'lucide-react'; // Added Sparkles and Wand2 for AI button
 import FetchQuiz from '../utils/FetchQuiz';
-
+import { categories } from '../utils/CourseCategories';
 const CreateCourse = () => {
   const [step, setStep] = useState(1);
   const [courseData, setCourseData] = useState({
@@ -35,14 +35,7 @@ const CreateCourse = () => {
   const [aiGeneratedQuizPreview, setAiGeneratedQuizPreview] = useState([]); // New state for AI generated questions preview
   const [showAiQuizGenerator, setShowAiQuizGenerator] = useState(false); // New state to toggle AI section visibility
 
-  const categories = [
-    'Blockchain',
-    'Programming',
-    'Design',
-    'Marketing',
-    'Business',
-    'Data Science'
-  ];
+  
 
   const difficulties = ['Beginner', 'Intermediate', 'Advanced'];
 
