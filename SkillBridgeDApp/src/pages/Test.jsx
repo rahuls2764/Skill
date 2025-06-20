@@ -5,12 +5,15 @@ import { useNavigate } from 'react-router-dom';
 import { Clock, Award } from 'lucide-react';
 import toast from 'react-hot-toast';
 import TestQuizQuestions from '../utils/TestQuizQuestions';
+import CourseQuizQuestions from '../utils/CourseQuizQuestions';
 import Loader from '../components/Loader';
+import { useLocation } from 'react-router-dom';
 const Test = () => {
   const { account, completeTest, getUserData } = useWeb3();
   const navigate = useNavigate();
-
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const location = useLocation();
+  const testType = location.state?.type || 'entry';
+  const courseId = location.state?.courseId || null;  const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(180);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -20,15 +23,25 @@ const Test = () => {
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState([]);
 
- 
-  const handleQuizStart=async()=>{
+  console.log("this is testype",testType,courseId);
+  const handleQuizStart = async () => {
     setLoading(true);
-    const data = await TestQuizQuestions();
-    setLoading(false);
+    console.log("this is testype",testType,courseId);
+
+    let data = [];
+  
+    if (testType === "entry") {
+      data = await TestQuizQuestions(); // fallback or AI
+    } else if (testType === "course" && courseId) {
+      // const { getCourseQuizFromIPFS } = await import('../utils/quizUtils');
+      data = await CourseQuizQuestions(courseId); // IPFS + CID
+    }
+  
     setQuestions(data);
-    
-    setHasStarted(true);  
-  }
+    setHasStarted(true);
+    setLoading(false);
+  };
+  
   // Fetch user data
   useEffect(() => {
     const fetchUserData = async () => {

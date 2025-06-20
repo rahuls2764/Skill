@@ -33,7 +33,7 @@ const Navbar = () => {
   const navigationItems = [
     { path: '/', icon: Home, label: 'Home' },
     { path: '/courses', icon: BookOpen, label: 'Courses' },
-    { path: '/test', icon: BarChart3, label: 'Take Test' },
+    { path: '/test',state:{type:"entry"}, icon: BarChart3, label: 'Take Test' },
     { path: '/create-course', icon: PlusCircle, label: 'Create Course' },
     { path: '/dashboard', icon: User, label: 'Dashboard' },
   ];
@@ -64,7 +64,11 @@ const Navbar = () => {
             {navigationItems.map((item) => (
               <Link
                 key={item.path}
-                to={item.path}
+                to={
+                  item.label === 'Take Test'
+                    ? { pathname: item.path, state: item.state }
+                    : item.path
+                }
                 className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-all duration-200 ${
                   isActivePath(item.path)
                     ? 'bg-purple-600 text-white'
