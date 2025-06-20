@@ -14,6 +14,7 @@ import {
   Shield,
   Globe
 } from 'lucide-react';
+import Loader from '../components/Loader';
 
 const Home = () => {
   const { account, connectWallet } = useWeb3();

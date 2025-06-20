@@ -240,7 +240,7 @@ const CreateCourse = () => {
           ))}
           <button
             onClick={() => addArrayField('prerequisites')}
-            className="text-indigo-600 hover:text-indigo-800 text-sm flex items-center"
+            className="bg-gradient-to-r from-indigo-500 to-purple-600  hover:from-indigo-600 hover:to-purple-700 text-sm flex items-center"
           >
             <Plus className="w-4 h-4 mr-1" />
             Add Prerequisite
@@ -270,7 +270,7 @@ const CreateCourse = () => {
           ))}
           <button
             onClick={() => addArrayField('learningOutcomes')}
-            className="text-indigo-600 hover:text-indigo-800 text-sm flex items-center"
+            className="bg-gradient-to-r from-indigo-500 to-purple-600  hover:from-indigo-600 hover:to-purple-700  text-sm flex items-center"
           >
             <Plus className="w-4 h-4 mr-1" />
             Add Learning Outcome
@@ -460,8 +460,8 @@ const CreateCourse = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <div className="w-full px-6 py-8"> {/* <--- Full width applied here */}
+    <div className="min-h-screen w-full bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      <div className=""> {/* <--- Full width applied here */}
         <div className="bg-white rounded-2xl shadow-sm border p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
@@ -500,7 +500,7 @@ const CreateCourse = () => {
               className={`px-6 py-3 rounded-xl font-medium transition-all ${
                 step === 1
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  : 'bg-cyan-500 text-gray-700 hover:bg-cyan-700'
               }`}
             >
               Previous
@@ -509,7 +509,7 @@ const CreateCourse = () => {
             <div className="flex space-x-4">
               <button
                 onClick={() => {}}
-                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all"
+                className="px-6 py-3 border bg-cyan-500 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-cyan-700 transition-all"
               >
                 <Save className="w-4 h-4 inline mr-2" />
                 Save Draft
@@ -535,7 +535,7 @@ const CreateCourse = () => {
           </div>
 
           <div className="mt-6 text-center">
-            <button className="text-indigo-600 hover:text-indigo-800 font-medium">
+            <button className="bg-gradient-to-r from-indigo-500 to-purple-600  hover:from-indigo-600 hover:to-purple-700  font-medium">
               <Eye className="w-4 h-4 inline mr-1" />
               Preview Course
             </button>
