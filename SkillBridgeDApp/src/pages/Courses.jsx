@@ -66,7 +66,7 @@ const Courses = () => {
 
   useEffect(() => {
     // Simulate fetching user token balance
-    setUserTokens(250);
+    setUserTokens(500);
     setCourses(mockCourses);
   }, []);
 

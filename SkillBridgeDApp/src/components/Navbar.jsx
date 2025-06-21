@@ -1,7 +1,12 @@
 // src/components/Navbar.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+
 import { useWeb3 } from '../context/Web3Context';
+import SkillBridge from '../../artifacts/contracts/SkillBridge.sol/SkillBridge.json';
+import SkillBridgeNFT from '../../artifacts/contracts/SkillBridgeNFT.sol/SkillBridgeNFT.json';
+import SkillBridgeToken from '../../artifacts/contracts/SkillBridgeToken.sol/SkillBridgeToken.json';
+
 import { 
   BookOpen, 
   User, 
@@ -15,20 +20,33 @@ import {
 } from 'lucide-react';
 
 const Navbar = () => {
-  const { account, connectWallet, disconnectWallet, getTokenBalance } = useWeb3();
+  const { account, connectWallet, disconnectWallet, getTokenBalance, contracts } = useWeb3();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [tokenBalance, setTokenBalance] = useState('0');
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
     const fetchBalance = async () => {
-      if (account) {
-        const balance = await getTokenBalance();
-        setTokenBalance(balance);
+      // Only fetch balance if account exists and contracts are initialized
+      if (account && contracts?.skillBridge) {
+        setIsLoadingBalance(true);
+        try {
+          const balance = await getTokenBalance(account); // Pass account as parameter
+          setTokenBalance(balance);
+        } catch (error) {
+          console.error('Failed to fetch token balance:', error);
+          setTokenBalance('0'); // Set default value on error
+        } finally {
+          setIsLoadingBalance(false);
+        }
+      } else {
+        setTokenBalance('0'); // Reset balance when no account or contracts not ready
       }
     };
+    
     fetchBalance();
-  }, [account, getTokenBalance]);
+  }, [account, getTokenBalance, contracts?.skillBridge]);
 
   const navigationItems = [
     { path: '/', icon: Home, label: 'Home' },
@@ -45,6 +63,11 @@ const Navbar = () => {
 
   const isActivePath = (path) => {
     return location.pathname === path;
+  };
+
+  const displayBalance = () => {
+    if (isLoadingBalance) return 'Loading...';
+    return `${parseFloat(tokenBalance).toFixed(2)} SBT`;
   };
 
   return (
@@ -84,7 +107,7 @@ const Navbar = () => {
                 <div className="flex items-center space-x-2 bg-white/10 rounded-lg px-3 py-2">
                   <Coins className="w-4 h-4 text-yellow-400" />
                   <span className="text-white font-medium">
-                    {parseFloat(tokenBalance).toFixed(2)} SBT
+                    {displayBalance()}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -147,7 +170,7 @@ const Navbar = () => {
                   <div className="flex items-center space-x-2 bg-white/10 rounded-lg px-3 py-2">
                     <Coins className="w-4 h-4 text-yellow-400" />
                     <span className="text-white font-medium">
-                      {parseFloat(tokenBalance).toFixed(2)} SBT
+                      {displayBalance()}
                     </span>
                   </div>
                   <div className="flex items-center justify-between bg-white/10 rounded-lg px-3 py-2">

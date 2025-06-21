@@ -19,7 +19,7 @@ import {
 import toast from 'react-hot-toast';
 
 const Dashboard = () => {
-  const { account, getUserData, purchaseCourse, getUserTokenBalance } = useWeb3();
+  const { account, getUserData, getTokenBalance, enrollInCourse } = useWeb3(); // Fixed: changed getUserTokenBalance to getTokenBalance
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [tokenBalance, setTokenBalance] = useState(0);
@@ -35,7 +35,7 @@ const Dashboard = () => {
       id: '1',
       title: 'Advanced React Patterns',
       instructor: 'Sarah Chen',
-      price: 50,
+      price: 2,
       rating: 4.8,
       students: 1234,
       duration: '8 hours',
@@ -86,10 +86,11 @@ const Dashboard = () => {
       if (account) {
         setLoading(true);
         try {
-          const data = await getUserData();
-          const balance = await getUserTokenBalance();
+          // Fixed: Changed getUser to getUserData
+          const data = await getUserData(account);
+          const balance = await getTokenBalance(account);
           setUserData(data);
-          setTokenBalance(balance);
+          setTokenBalance(parseFloat(balance) || 0); // Fixed: parse balance as number
           
           // Mock enrolled and completed courses based on user data
           if (data?.coursesEnrolled) {
@@ -106,14 +107,16 @@ const Dashboard = () => {
             setCompletedCourses(completed);
           }
         } catch (error) {
+          console.error("Detailed fetchUserData error:", error);
           toast.error('Error fetching user data');
         }
         setLoading(false);
       }
     };
     fetchUserData();
-  }, [account, getUserData, getUserTokenBalance]);
+  }, [account, getUserData, getTokenBalance]);
 
+  // Fixed: Changed purchaseCourse to enrollInCourse to match Web3Context
   const handlePurchaseCourse = async (courseId, price) => {
     if (tokenBalance < price) {
       toast.error(`Insufficient tokens. You need ${price} SKL tokens.`);
@@ -122,14 +125,15 @@ const Dashboard = () => {
 
     setPurchaseLoading({ ...purchaseLoading, [courseId]: true });
     try {
-      await purchaseCourse(courseId);
+      await enrollInCourse(courseId);
       toast.success('Course purchased successfully!');
       // Refresh user data
-      const updatedData = await getUserData();
-      const updatedBalance = await getUserTokenBalance();
+      const updatedData = await getUserData(account);
+      const updatedBalance = await getTokenBalance(account);
       setUserData(updatedData);
-      setTokenBalance(updatedBalance);
+      setTokenBalance(parseFloat(updatedBalance) || 0);
     } catch (error) {
+      console.error("Purchase error:", error);
       toast.error('Error purchasing course');
     }
     setPurchaseLoading({ ...purchaseLoading, [courseId]: false });
@@ -137,7 +141,7 @@ const Dashboard = () => {
 
   if (!account) {
     return (
-      <div className="dashboard-full-width w-full min-h-screen p-6 text-center text-red-400">
+      <div className="w-full p-6 text-center text-red-400">
         <div className="w-full mx-auto mt-20">
           <Trophy size={48} className="mx-auto mb-4 text-red-400" />
           <h2 className="text-xl font-bold mb-2">Access Denied</h2>
@@ -149,7 +153,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="dashboard-full-width w-full min-h-screen p-6 text-center text-cyan-400">
+      <div className="w-full p-6 text-center text-cyan-400">
         <div className="w-full mx-auto mt-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4"></div>
           <p>Loading dashboard...</p>
@@ -159,7 +163,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="dashboard-full-width w-full min-h-screen p-6 text-white">
+    <div className="w-full p-6 text-white">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -196,7 +200,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Completed</p>
-              <p className="text-2xl font-bold text-green-400">{completedCourses.length}</p>
+              <p className="text-2xl font-bold text-green-400">{userData?.coursesCompleted || 0}</p>
             </div>
             <CheckCircle size={24} className="text-green-400" />
           </div>
@@ -205,8 +209,8 @@ const Dashboard = () => {
         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">NFTs Earned</p>
-              <p className="text-2xl font-bold text-purple-400">{userData?.nftsEarned?.length || 0}</p>
+              <p className="text-gray-400 text-sm">Tokens Earned</p>
+              <p className="text-2xl font-bold text-purple-400">{userData?.tokensEarned || '0.0'}</p>
             </div>
             <Award size={24} className="text-purple-400" />
           </div>
@@ -348,8 +352,8 @@ const Dashboard = () => {
           >
             <Target size={20} className="text-cyan-400" />
             <div className="text-left">
-              <p className="font-semibold">Retake Test</p>
-              <p className="text-sm text-gray-400">Earn more tokens</p>
+              <p className="font-semibold">Take Test</p>
+              <p className="text-sm text-gray-400">Earn tokens</p>
             </div>
           </button>
           
