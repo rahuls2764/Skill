@@ -23,10 +23,10 @@ const Test = () => {
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState([]);
 
-  console.log("this is testype",testType,courseId);
+  // console.log("this is testype",testType,courseId);
   const handleQuizStart = async () => {
     setLoading(true);
-    console.log("this is testype",testType,courseId);
+    // console.log("this is testype",testType,courseId);
 
     let data = [];
   
@@ -122,7 +122,7 @@ const Test = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left text-mytofy-text-secondary">
           <div className="bg-gradient-to-br from-green-500/20 to-teal-500/20 rounded-xl p-4 shadow-md border border-cyan-600">
             <h3 className="text-lg font-semibold text-mytofy-accent-coral mb-1">1 Free Attempt</h3>
-            <p className="text-sm">Your first SkillBridge entry test is free. After this, each test will cost 2 SKL tokens.</p>
+            <p className="text-sm">Your first SkillBridge entry test is free. After this, each test will cost 2 SBL tokens.</p>
           </div>
     
           <div className="bg-gradient-to-br from-blue-500/20 to-teal-500/20 rounded-xl p-4 shadow-md border border-cyan-600">
@@ -138,15 +138,17 @@ const Test = () => {
     
         {/* Start button */}
         <div className="mt-6">
-        {loading ? <Loader /> :<button
+        {loading ? <Loader /> : (
+          <button
             onClick={handleQuizStart}
-            // onClick={()=>setLoading(true)}
             disabled={loading}
-            className={` transition-all px-6 py-3 rounded-xl font-semibold text-lg flex items-center justify-center gap-3 bg-cyan-500 hover:bg-cyan-700 `}
+            className={`transition-all px-6 py-3 rounded-xl font-semibold text-lg flex items-center justify-center gap-3 bg-cyan-500 hover:bg-cyan-700`}
           >
-            Start Test
-          </button> }   
-        </div>
+            {userData?.hasCompletedTest ? "Retake Test (2 SKL)" : "Start Test"}
+          </button>
+        )}
+      </div>
+
       </div>
      
       ) : !isSubmitted ? (

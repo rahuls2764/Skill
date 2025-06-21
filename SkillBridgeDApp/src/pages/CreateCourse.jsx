@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Upload, Plus, X, Eye, Save, Video, FileText, Zap, CheckCircle, AlertCircle, Sparkles, Wand2 } from 'lucide-react'; // Added Sparkles and Wand2 for AI button
 import FetchQuiz from '../utils/FetchQuiz';
 import { categories } from '../utils/CourseCategories';
+import {uploadCourseContentToIPFS } from '../services/IpfsUploadService';
+import { useWeb3 } from '../context/Web3Context';
+import toast from 'react-hot-toast';
+import { ethers } from 'ethers';
+
 const CreateCourse = () => {
   const [step, setStep] = useState(1);
   const [courseData, setCourseData] = useState({
@@ -34,10 +39,14 @@ const CreateCourse = () => {
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false); // New state for AI generation loading
   const [aiGeneratedQuizPreview, setAiGeneratedQuizPreview] = useState([]); // New state for AI generated questions preview
   const [showAiQuizGenerator, setShowAiQuizGenerator] = useState(false); // New state to toggle AI section visibility
+  const { provider, signer, account, connectWallet, contracts } = useWeb3();
+  const skillBridgeMainContract = contracts?.skillBridge;
+  const tokenContract = contracts?.token;
 
-  
 
   const difficulties = ['Beginner', 'Intermediate', 'Advanced'];
+   
+  
 
   const handleInputChange = (field, value) => {
     setCourseData(prev => ({ ...prev, [field]: value }));
@@ -169,11 +178,74 @@ const CreateCourse = () => {
   };
 
   const handleSubmit = async () => {
-    await simulateUpload();
-    alert('Course created successfully! Your course is now live on SkillBridge.');
-    // Reset form or redirect
+    if (!provider || !signer || !skillBridgeMainContract) {
+      toast.error("Web3 provider not connected. Please connect your wallet.");
+      connectWallet();
+      return;
+    }
+  
+    setIsUploading(true);
+    setUploadProgress(0);
+    toast.loading("Starting course upload to IPFS and Blockchain...", { id: "course-upload" });
+  
+    try {
+      // ✅ Step 1: Upload course content to your backend which pins to Pinata/IPFS
+      const ipfsMetadataHash = await uploadCourseContentToIPFS(courseData, quizData, setUploadProgress);
+      toast.success("All content uploaded to IPFS!", { id: "course-upload" });
+      console.log("this is ipfs metadatahash",ipfsMetadataHash);
+      // ✅ Step 2: Interact with Smart Contract to store course info on-chain
+      setUploadProgress(75);
+      toast.loading("Confirm transaction in your wallet...", { id: "blockchain-tx" });
+  
+      const priceInTokens = ethers.parseUnits(courseData.price.toString(), 18);
+  
+      const tx = await skillBridgeMainContract.createCourse(
+        ipfsMetadataHash, // CID from backend/IPFS
+        courseData.title,
+        priceInTokens,
+      );
+  
+      setUploadProgress(90);
+      toast.loading("Transaction sent. Waiting for confirmation...", { id: "blockchain-tx" });
+      await tx.wait();
+      setUploadProgress(100);
+  
+      toast.success("Course created successfully on SkillBridge!", { id: "course-upload" });
+      toast.dismiss("blockchain-tx");
+  
+      // ✅ Reset form after successful publish
+      setCourseData({
+        title: '',
+        description: '',
+        category: '',
+        difficulty: '',
+        price: '',
+        duration: '',
+        videoFile: null,
+        thumbnail: null,
+        prerequisites: [''],
+        learningOutcomes: ['']
+      });
+  
+      setQuizData({
+        questions: [
+          { id: Date.now(), question: '', options: ['', '', '', ''], correctAnswer: 0, points: 10 }
+        ],
+        passingScore: 70,
+        timeLimit: 30
+      });
+  
+      setStep(1);
+    } catch (error) {
+      console.error("Failed to create course:", error);
+      toast.error(`Failed to create course: ${error.message || error}`, { id: "course-upload" });
+      toast.dismiss("blockchain-tx");
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
   };
-
+  
   // --- AI Quiz Generation Function ---
   const generateQuestionsWithAi = async () => {
     if (!courseData.category || !courseData.title || !courseData.description || !courseData.difficulty) {

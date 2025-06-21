@@ -17,120 +17,112 @@ import {
   CheckCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import AdminPanel from '../components/AdminPanel'; // Adjust path as needed
+
 
 const Dashboard = () => {
-  const { account, getUserData, purchaseCourse, getUserTokenBalance } = useWeb3();
+  const { 
+    account, 
+    getUserData, 
+    enrollInCourse, 
+    getTokenBalance, 
+    getAllCourses,
+    hasAccessToCourse,
+    tokenBalance,
+    refreshTokenBalance
+  } = useWeb3();
+  
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
-  const [tokenBalance, setTokenBalance] = useState(0);
-  const [courses, setCourses] = useState([]);
+  const [currentTokenBalance, setCurrentTokenBalance] = useState(0);
+  const [allCourses, setAllCourses] = useState([]);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [completedCourses, setCompletedCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [purchaseLoading, setPurchaseLoading] = useState({});
 
-  // Sample courses data - in real app, fetch from API
-  const availableCourses = [
-    {
-      id: '1',
-      title: 'Advanced React Patterns',
-      instructor: 'Sarah Chen',
-      price: 50,
-      rating: 4.8,
-      students: 1234,
-      duration: '8 hours',
-      category: 'Frontend',
-      thumbnail: '/api/placeholder/300/200',
-      description: 'Master advanced React patterns and hooks for professional development.'
-    },
-    {
-      id: '2',
-      title: 'Solidity Smart Contracts',
-      instructor: 'Alex Kumar',
-      price: 75,
-      rating: 4.9,
-      students: 856,
-      duration: '12 hours',
-      category: 'Blockchain',
-      thumbnail: '/api/placeholder/300/200',
-      description: 'Learn to build secure and efficient smart contracts on Ethereum.'
-    },
-    {
-      id: '3',
-      title: 'UI/UX Design Fundamentals',
-      instructor: 'Maria Rodriguez',
-      price: 40,
-      rating: 4.7,
-      students: 2145,
-      duration: '6 hours',
-      category: 'Design',
-      thumbnail: '/api/placeholder/300/200',
-      description: 'Create beautiful and user-friendly interfaces with modern design principles.'
-    },
-    {
-      id: '4',
-      title: 'Node.js Backend Development',
-      instructor: 'David Park',
-      price: 60,
-      rating: 4.6,
-      students: 987,
-      duration: '10 hours',
-      category: 'Backend',
-      thumbnail: '/api/placeholder/300/200',
-      description: 'Build scalable server-side applications with Node.js and Express.'
-    }
-  ];
-
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchAllData = async () => {
       if (account) {
         setLoading(true);
         try {
-          const data = await getUserData();
-          const balance = await getUserTokenBalance();
-          setUserData(data);
-          setTokenBalance(balance);
+          // Fetch user data from blockchain
+          const [userDataFromChain, balance, coursesFromChain] = await Promise.all([
+            getUserData(),
+            getTokenBalance(),
+            getAllCourses()
+          ]);
+
+          setUserData(userDataFromChain);
+          setCurrentTokenBalance(parseFloat(balance) || 0);
+          setAllCourses(coursesFromChain);
+
+          // Check enrollment status for each course
+          const enrollmentPromises = coursesFromChain.map(async (course) => {
+            const hasAccess = await hasAccessToCourse(account, course.courseId);
+            return { ...course, isEnrolled: hasAccess };
+          });
+
+          const coursesWithEnrollment = await Promise.all(enrollmentPromises);
           
-          // Mock enrolled and completed courses based on user data
-          if (data?.coursesEnrolled) {
-            const enrolled = availableCourses.filter(course => 
-              data.coursesEnrolled.includes(course.id)
-            );
-            setEnrolledCourses(enrolled);
-          }
+          // Separate enrolled and available courses
+          const enrolled = coursesWithEnrollment.filter(course => course.isEnrolled);
+          const available = coursesWithEnrollment.filter(course => !course.isEnrolled);
           
-          if (data?.coursesCompleted) {
-            const completed = availableCourses.filter(course => 
-              data.coursesCompleted.includes(course.id)
-            );
-            setCompletedCourses(completed);
-          }
+          setEnrolledCourses(enrolled);
+          
+          // For now, we'll assume completed courses are tracked separately
+          // You might want to add a completion tracking mechanism in your smart contract
+          setCompletedCourses([]); // This would need to be implemented in the smart contract
+          
         } catch (error) {
-          toast.error('Error fetching user data');
+          console.error('Error fetching dashboard data:', error);
+          toast.error('Error loading dashboard data');
         }
         setLoading(false);
       }
     };
-    fetchUserData();
-  }, [account, getUserData, getUserTokenBalance]);
 
-  const handlePurchaseCourse = async (courseId, price) => {
-    if (tokenBalance < price) {
+    fetchAllData();
+  }, [account, getUserData, getTokenBalance, getAllCourses, hasAccessToCourse]);
+
+  // Also update when tokenBalance changes from Web3Context
+  useEffect(() => {
+    if (tokenBalance) {
+      setCurrentTokenBalance(parseFloat(tokenBalance) || 0);
+    }
+  }, [tokenBalance]);
+
+  const handleEnrollInCourse = async (courseId, price) => {
+    if (currentTokenBalance < price) {
       toast.error(`Insufficient tokens. You need ${price} SKL tokens.`);
       return;
     }
 
     setPurchaseLoading({ ...purchaseLoading, [courseId]: true });
     try {
-      await purchaseCourse(courseId);
-      toast.success('Course purchased successfully!');
-      // Refresh user data
-      const updatedData = await getUserData();
-      const updatedBalance = await getUserTokenBalance();
-      setUserData(updatedData);
-      setTokenBalance(updatedBalance);
+      await enrollInCourse(courseId);
+      toast.success('Successfully enrolled in course!');
+      
+      // Refresh data after enrollment
+      await refreshTokenBalance();
+      const updatedUserData = await getUserData();
+      setUserData(updatedUserData);
+      
+      // Update course enrollment status
+      const updatedCourses = allCourses.map(course => {
+        if (course.courseId === courseId) {
+          return { ...course, isEnrolled: true };
+        }
+        return course;
+      });
+      
+      setAllCourses(updatedCourses);
+      setEnrolledCourses(prev => [...prev, updatedCourses.find(c => c.courseId === courseId)]);
+      
     } catch (error) {
-      toast.error('Error purchasing course');
+      console.error('Error enrolling in course:', error);
+      toast.error('Failed to enroll in course');
     }
     setPurchaseLoading({ ...purchaseLoading, [courseId]: false });
   };
@@ -161,6 +153,7 @@ const Dashboard = () => {
   return (
     <div className="dashboard-full-width w-full min-h-screen p-6 text-white">
       {/* Header */}
+      <AdminPanel />
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Welcome back!</h1>
@@ -169,7 +162,7 @@ const Dashboard = () => {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-lg">
             <Coins size={20} className="text-yellow-400" />
-            <span className="font-semibold">{tokenBalance} SKL</span>
+            <span className="font-semibold">{currentTokenBalance.toFixed(2)} SBT</span>
           </div>
           <button 
             onClick={() => navigate('/profile')}
@@ -196,7 +189,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Completed</p>
-              <p className="text-2xl font-bold text-green-400">{completedCourses.length}</p>
+              <p className="text-2xl font-bold text-green-400">{userData?.coursesCompleted || 0}</p>
             </div>
             <CheckCircle size={24} className="text-green-400" />
           </div>
@@ -205,8 +198,8 @@ const Dashboard = () => {
         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">NFTs Earned</p>
-              <p className="text-2xl font-bold text-purple-400">{userData?.nftsEarned?.length || 0}</p>
+              <p className="text-gray-400 text-sm">Tokens Earned</p>
+              <p className="text-2xl font-bold text-purple-400">{parseFloat(userData?.tokensEarned || 0).toFixed(2)}</p>
             </div>
             <Award size={24} className="text-purple-400" />
           </div>
@@ -232,19 +225,29 @@ const Dashboard = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
             {enrolledCourses.map((course) => (
-              <div key={course.id} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-cyan-500 transition-colors">
+              <div key={course.courseId} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-cyan-500 transition-colors">
                 <div className="h-40 bg-gray-700 flex items-center justify-center">
-                  <Play size={32} className="text-cyan-400" />
+                  {course.thumbnail ? (
+                    <img 
+                      src={`https://gateway.pinata.cloud/ipfs/${course.thumbnail}`} 
+                      alt={course.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Play size={32} className="text-cyan-400" />
+                  )}
                 </div>
                 <div className="p-4">
                   <h3 className="font-semibold mb-2">{course.title}</h3>
-                  <p className="text-gray-400 text-sm mb-3">by {course.instructor}</p>
+                  <p className="text-gray-400 text-sm mb-3">by {course.instructor?.slice(0, 10)}...</p>
                   <div className="flex justify-between items-center">
                     <div className="text-xs text-gray-500">
-                      Progress: 60% {/* Mock progress */}
+                      {course.category && (
+                        <span className="bg-cyan-600 px-2 py-1 rounded text-white">{course.category}</span>
+                      )}
                     </div>
                     <button 
-                      onClick={() => navigate(`/course/${course.id}`)}
+                      onClick={() => navigate(`/courses/${course.courseId}`)}
                       className="px-4 py-2 bg-cyan-600 rounded hover:bg-cyan-700 transition-colors text-sm"
                     >
                       Continue
@@ -261,80 +264,66 @@ const Dashboard = () => {
       <div className="mb-8">
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
           <TrendingUp size={24} className="text-cyan-400" />
-          Popular Courses
+          Available Courses
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-          {availableCourses.map((course) => {
-            const isEnrolled = enrolledCourses.some(c => c.id === course.id);
-            const isCompleted = completedCourses.some(c => c.id === course.id);
-            
-            return (
-              <div key={course.id} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-cyan-500 transition-colors">
-                <div className="h-40 bg-gray-700 flex items-center justify-center relative">
+          {allCourses.filter(course => !course.isEnrolled).map((course) => (
+            <div key={course.courseId} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-cyan-500 transition-colors">
+              <div className="h-40 bg-gray-700 flex items-center justify-center relative">
+                {course.thumbnail ? (
+                  <img 
+                    src={`https://gateway.pinata.cloud/ipfs/${course.thumbnail}`} 
+                    alt={course.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
                   <BookOpen size={32} className="text-cyan-400" />
-                  {isCompleted && (
-                    <div className="absolute top-2 right-2 bg-green-600 rounded-full p-1">
-                      <CheckCircle size={16} className="text-white" />
-                    </div>
+                )}
+              </div>
+              <div className="p-4">
+                <div className="flex items-center gap-1 mb-2">
+                  {course.category && (
+                    <span className="text-xs bg-cyan-600 px-2 py-1 rounded">{course.category}</span>
+                  )}
+                  {course.difficulty && (
+                    <span className="text-xs bg-purple-600 px-2 py-1 rounded ml-1">{course.difficulty}</span>
                   )}
                 </div>
-                <div className="p-4">
-                  <div className="flex items-center gap-1 mb-2">
-                    <span className="text-xs bg-cyan-600 px-2 py-1 rounded">{course.category}</span>
-                    <div className="flex items-center gap-1 ml-auto">
-                      <Star size={12} className="text-yellow-400 fill-current" />
-                      <span className="text-xs text-gray-400">{course.rating}</span>
-                    </div>
+                <h3 className="font-semibold mb-1 text-sm">{course.title}</h3>
+                <p className="text-gray-400 text-xs mb-2">by {course.instructor?.slice(0, 10)}...</p>
+                {course.duration && (
+                  <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
+                    <Clock size={10} />
+                    <span>{course.duration}</span>
                   </div>
-                  <h3 className="font-semibold mb-1 text-sm">{course.title}</h3>
-                  <p className="text-gray-400 text-xs mb-2">by {course.instructor}</p>
-                  <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
-                    <div className="flex items-center gap-1">
-                      <Users size={10} />
-                      <span>{course.students}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock size={10} />
-                      <span>{course.duration}</span>
-                    </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-1">
+                    <Coins size={16} className="text-yellow-400" />
+                    <span className="font-semibold">{course.price} SKL</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1">
-                      <Coins size={16} className="text-yellow-400" />
-                      <span className="font-semibold">{course.price} SKL</span>
-                    </div>
-                    {isEnrolled ? (
-                      <button 
-                        onClick={() => navigate(`/course/${course.id}`)}
-                        className="px-3 py-1 bg-green-600 rounded hover:bg-green-700 transition-colors text-sm"
-                      >
-                        {isCompleted ? 'Review' : 'Continue'}
-                      </button>
+                  <button 
+                    onClick={() => handleEnrollInCourse(course.courseId, course.price)}
+                    disabled={purchaseLoading[course.courseId] || currentTokenBalance < course.price}
+                    className={`px-3 py-1 rounded transition-colors text-sm flex items-center gap-1 ${
+                      currentTokenBalance < course.price 
+                        ? 'bg-gray-600 cursor-not-allowed' 
+                        : 'bg-cyan-600 hover:bg-cyan-700'
+                    }`}
+                  >
+                    {purchaseLoading[course.courseId] ? (
+                      'Enrolling...'
                     ) : (
-                      <button 
-                        onClick={() => handlePurchaseCourse(course.id, course.price)}
-                        disabled={purchaseLoading[course.id] || tokenBalance < course.price}
-                        className={`px-3 py-1 rounded transition-colors text-sm flex items-center gap-1 ${
-                          tokenBalance < course.price 
-                            ? 'bg-gray-600 cursor-not-allowed' 
-                            : 'bg-cyan-600 hover:bg-cyan-700'
-                        }`}
-                      >
-                        {purchaseLoading[course.id] ? (
-                          'Buying...'
-                        ) : (
-                          <>
-                            <ShoppingCart size={12} />
-                            Buy
-                          </>
-                        )}
-                      </button>
+                      <>
+                        <ShoppingCart size={12} />
+                        Enroll
+                      </>
                     )}
-                  </div>
+                  </button>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -348,8 +337,12 @@ const Dashboard = () => {
           >
             <Target size={20} className="text-cyan-400" />
             <div className="text-left">
-              <p className="font-semibold">Retake Test</p>
-              <p className="text-sm text-gray-400">Earn more tokens</p>
+              <p className="font-semibold">
+                {userData?.hasCompletedTest ? 'Retake Test' : 'Take Test'}
+              </p>
+              <p className="text-sm text-gray-400">
+                {userData?.hasCompletedTest ? 'Improve your score' : 'Earn tokens'}
+              </p>
             </div>
           </button>
           
@@ -370,8 +363,8 @@ const Dashboard = () => {
           >
             <Award size={20} className="text-purple-400" />
             <div className="text-left">
-              <p className="font-semibold">Teach Course</p>
-              <p className="text-sm text-gray-400">Share your skills</p>
+              <p className="font-semibold">Create Course</p>
+              <p className="text-sm text-gray-400">Share your knowledge</p>
             </div>
           </button>
         </div>

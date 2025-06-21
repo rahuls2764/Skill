@@ -23,11 +23,13 @@ const Navbar = () => {
   useEffect(() => {
     const fetchBalance = async () => {
       if (account) {
-        const balance = await getTokenBalance();
-        setTokenBalance(balance);
+        const balanceRaw = await getTokenBalance(); // already formatted as string
+        const parsed = parseFloat(balanceRaw).toFixed(2); // format it cleanly
+        setTokenBalance(parsed);
       }
     };
     fetchBalance();
+    
   }, [account, getTokenBalance]);
 
   const navigationItems = [
@@ -87,9 +89,8 @@ const Navbar = () => {
               <>
                 <div className="flex items-center space-x-2 bg-white/10 rounded-lg px-3 py-2">
                   <Coins className="w-4 h-4 text-yellow-400" />
-                  <span className="text-white font-medium">
-                    {parseFloat(tokenBalance).toFixed(2)} SBT
-                  </span>
+                  <span className="text-white font-medium">{tokenBalance} SBT</span>
+
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
